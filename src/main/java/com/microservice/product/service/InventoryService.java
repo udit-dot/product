@@ -15,6 +15,9 @@ public class InventoryService {
 
 	@Autowired
 	private ModelMapper modelMapper;
+	
+	@Autowired
+	private InventoryProducerService inventoryProducerService;
 
 	public InventoryDto getInventoryById(Integer inventoryId) {
 		Inventory inventory = inventoryRepository.findById(inventoryId)
@@ -52,6 +55,15 @@ public class InventoryService {
 		Inventory updatedInventory = inventoryRepository.save(inventory);
 
 		// Map updated entity to DTO
-		return modelMapper.map(updatedInventory, InventoryDto.class);
+		InventoryDto updatedDto = modelMapper.map(updatedInventory, InventoryDto.class);
+		
+		// Send Kafka notification
+	    try {
+	        inventoryProducerService.sendInventoryEvent("Inventory Data updated : " + updatedDto);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
+
+	    return updatedDto;
 	}
 }

@@ -22,13 +22,24 @@ public class ProductService {
 
 	@Autowired
 	private ModelMapper modelMapper;
+	@Autowired
+	private ProductProducerService productProducerService;
 
 	public ProductDto getProductById(Integer productId) {
 		Product product = productRepository.findById(productId)
 				.orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
 
 		// Map entity to DTO using ModelMapper
-		return modelMapper.map(product, ProductDto.class);
+		ProductDto productDto =  modelMapper.map(product, ProductDto.class);
+		// Send product data as notification to Kafka
+	    try {
+	    	productProducerService.sendProductEvent("Product data sent : " +productDto);
+	    } catch (Exception e) {
+	        // Log error but don't block the main flow
+	        e.printStackTrace();
+	    }
+
+	    return productDto;
 	}
 
 	public ProductDto createProduct(ProductDto productDto) {
